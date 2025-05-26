@@ -16,12 +16,16 @@ servidor(Port) :-
 generador_html(_Request) :-
 	reply_html_page([title('Explicacion: Ejercicio Toy Story')],
 		[
-			body(style='background: #212121' ,[  
-					h1(style = 'color: white',['Explicacion: Ejercicio Toy Story']),
-					% arity 1
-					p(class = bodytext, 'With some text'),
-					% arity 2
-					p([class = bodytext, style = 'font - size : 120%'], ['Bigger text', b('some bold')])
-					])]).
+			body(style = 'background: #e0e0e0;   display: flex;   justify-content: center;   align-items: center;',
+				[
+					 div(style = 'background:#e0e0e0; width: 80% ; height: 80vh; margin-top:4%; box-shadow:  20px 20px 60px #bebebe,
+             -20px -20px 60px #ffffff; border-radius: 50px; alig',
+						[
+							h1(style = 'color : black', ['Explicacion : EjercicioToyStory']),
+							% arity 1
+							p(class = bodytext, 'Withsometext'),
+							% arity 2
+							p([class = bodytext, style = 'font - size : 120%'], ['Bigger text', b('some bold')])])
+							])]).
 
 % Para iniciar el servidor: ?- servidor(8080). en la consola de SWI-Prolog
