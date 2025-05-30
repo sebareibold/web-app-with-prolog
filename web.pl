@@ -16,7 +16,7 @@ servidor(Port) :-
 generador_html(_Request) :-
 	reply_html_page([title('Explicacion: Ejercicio Toy Story')],
 		[
-			body(style = 'background: #e0e0e0;   display: flex;   justify-content: center;   align-items: center;',
+			body(style = 'background: #e0e0e0;    display: grid;  grid-template-rows: 1fr;  grid-template-columns: repeat(4, 1fr);  gap: 8px;',
 				[
 					 div(style = 'background:#e0e0e0; width: 80% ; height: 80vh; margin-top:4%; box-shadow:  20px 20px 60px #bebebe,
              -20px -20px 60px #ffffff; border-radius: 50px; alig',
