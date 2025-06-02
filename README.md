@@ -8,7 +8,7 @@ Se exploran conceptos como:
 *   Servidor HTTP embebido (`http_server`)
 *   Rutas declarativas (`http_handler`)
 *   Respuesta dinámica y archivos estáticos (`http_reply_file/3`, `http_reply_from_files/3`)
-## ▶️ Cómo ejecutar
+## Cómo ejecutar
 
 1.  Cloná el proyecto:
 
