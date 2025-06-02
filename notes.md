@@ -18,3 +18,14 @@ Existen principalmente dos formas de generar HTML en SWI-Prolog:
     *   Las fuentes mencionan esta alternativa pero no profundizan en su implementación específica.
 
 El método utilizando en nuestro código es el DSL basado en DCG. Por el uso de `reply_html_page/2` y la estructura de los términos `head(...)` y `body(...)` conteniendo especificaciones de elementos como `title(...)`, `h1(...)`, y `p(...)` con atributos.
+
+
+:- user:file_search_path(assets_alias, 'assets').: Define un nuevo alias llamado assets_alias. Cuando Prolog encuentre una ruta que empiece con assets_alias(...), buscará ese archivo o directorio dentro del directorio físico 'assets' (relativo a donde está tu archivo .pl). Usamos user: para que esta definición esté disponible globalmente para el usuario actual.
+
+- http_handler('/assets/', http_reply_from_files(assets_alias('.'), []), [prefix]).: 
+
+    El primer argumento assets_alias('.') usa el alias que definimos. . se refiere a la raíz del directorio asociado al alias ('assets').
+
+    http_reply_from_files/2 (usado en el contexto de http_handler) toma la ruta del archivo/directorio (en este caso, assets_alias('.')) y una lista de opciones para http_reply_from_files. La lista [] aquí significa que no pasamos opciones adicionales a from_files.
+
+    La opción [prefix] sigue siendo necesaria para el http_handler mismo, e indica que cualquier URL que empiece con /assets/ será manejada por este predicado, y la parte restante de la URL se usará para encontrar el archivo dentro del directorio assets.
