@@ -325,6 +325,7 @@
     </div>
 
     <script>
+      //Personajes
       const datosPersonajes = [
         { id: "buzz", tiempo: 5, elemento: document.getElementById("buzz") },
         { id: "woody", tiempo: 10, elemento: document.getElementById("woody") },
@@ -332,6 +333,7 @@
         { id: "hamm", tiempo: 25, elemento: document.getElementById("hamm") },
       ];
 
+      //Ubicacion de los personajes para ubicarlos en un div de inicio
       let ubicacionesPersonajes = {
         buzz: "inicio",
         woody: "inicio",
@@ -339,19 +341,15 @@
         hamm: "inicio",
       };
 
-      let tiempoTotal = 0; // No se actualiza en esta versionb
+     let tiempoTotal = 0; // No se actualiza en esta version
 
+      // Obtenemos los elementos del documento, divs de inico, divs de seguro, slots, reloj, y veriicar form.
       const divPersonajesInicio = document.getElementById("inicio-personajes");
       const divPersonajesSeguro = document.getElementById("seguro-personajes");
-      const divContenedorSlotsPuente = document.getElementById(
-        "contenedor-slots-puente"
-      );
+      const divContenedorSlotsPuente = document.getElementById("contenedor-slots-puente");
       const slotsCruce = document.querySelectorAll(".slot-cruce"); // Todos los slots
       const divReloj = document.getElementById("reloj");
-      const btnVerificarFormacion = document.getElementById(
-        "btn-verificar-formacion"
-      );
-
+      const btnVerificarFormacion = document.getElementById("btn-verificar-formacion");
       const divMensajeJuego = document.getElementById("mensaje-juego");
 
       function inicioArrastre(evento) {
@@ -368,12 +366,8 @@
       }
 
       function arrastreSobre(evento) {
-        // Permitir soltar si los datos son texto/plain (nuestro ID de personaje)
         if (evento.dataTransfer.types.includes("text/plain")) {
-          // Prevenir el comportamiento por defecto (ej. no permitir drop)
           evento.preventDefault();
-
-          // Asegurarse de que el target actual es o contiene una zona de drop válida
           const zonaDropValida = evento.target.closest(".zona-drop");
           if (zonaDropValida) {
             // Añadir la clase drag-over solo a la zona de drop válida
@@ -394,9 +388,7 @@
               }
             }
           } else {
-            // Si el target no es una zona de drop válida, no permitir drop
             evento.dataTransfer.dropEffect = "none";
-            // Limpiar cualquier drag-over de zonas previas
             document
               .querySelectorAll(".zona-drop")
               .forEach((zona) => zona.classList.remove("drag-over"));
@@ -405,7 +397,6 @@
       }
 
       function salidaArrastre(evento) {
-        // Solo quitar la clase si salimos DE una zona de drop VÁLIDA
         const zonaDropValida = evento.target.closest(".zona-drop");
         if (zonaDropValida) {
           if (evento.currentTarget.classList.contains("zona-drop")) {
@@ -420,11 +411,8 @@
         document
           .querySelectorAll(".zona-drop")
           .forEach((zona) => zona.classList.remove("drag-over"));
-
         const draggedId = evento.dataTransfer.getData("text/plain");
         const elementoArrastrado = document.getElementById(draggedId);
-
-        // Asegurarse de que lo que se soltó es un personaje
         if (
           !elementoArrastrado ||
           !elementoArrastrado.classList.contains("personaje")
@@ -434,15 +422,10 @@
             elementoArrastrado.classList.remove("dragging");
           return;
         }
-
-        // Encontrar la zona de drop donde se soltó
         const zonaDrop = evento.target.closest(".zona-drop");
-
-        // Si no se soltó en una zona de drop válida, el elemento regresa a su ubicación original
         if (!zonaDrop) {
           const ubicacionOriginal =
             elementoArrastrado.dataset.ubicacionOriginal;
-          // Mover el elemento de vuelta al contenedor que le corresponde según su ubicacionOriginal
           moverElementoAlContenedor(elementoArrastrado.id, ubicacionOriginal);
           elementoArrastrado.classList.remove("dragging");
           divMensajeJuego.textContent = "Soltado en zona no válida.";
@@ -513,71 +496,7 @@
 
         actualizarVista();
       }
-
-      function moverElementoAlContenedor(idPersonaje, ubicacion) {
-        const elementoPersonaje = document.getElementById(idPersonaje);
-        if (!elementoPersonaje) return;
-
-        if (ubicacion === "inicio") {
-          divPersonajesInicio.appendChild(elementoPersonaje);
-        } else if (ubicacion === "seguro") {
-          divPersonajesSeguro.appendChild(elementoPersonaje);
-        } else if (ubicacion.startsWith("slot-cruce")) {
-          const slot = document.getElementById(ubicacion);
-          if (slot) {
-            slot.appendChild(elementoPersonaje);
-            slot.classList.add("ocupado");
-          }
-        }
-        // Limpiar clase ocupado si se mueve fuera de un slot
-        if (!ubicacion.startsWith("slot-cruce")) {
-          slotsCruce.forEach((slot) => {
-            if (
-              !slot.contains(elementoPersonaje) &&
-              slot.classList.contains("ocupado")
-            ) {
-              // Esto es para limpiar el slot del que *pudo* haber venido
-              slot.classList.remove("ocupado");
-            }
-          });
-        }
-      }
-
-      function actualizarVista() {
-        // Asegurarse de que cada personaje está en el contenedor correcto según el estado ubicacionesPersonajes
-        datosPersonajes.forEach((personaje) => {
-          moverElementoAlContenedor(
-            personaje.id,
-            ubicacionesPersonajes[personaje.id]
-          );
-        });
-
-        // La linterna no se mueve en esta versión
-        divLinternaInicio.style.display =
-          ubicacionLinterna === "inicio" ? "flex" : "none";
-        divLinternaSeguro.style.display =
-          ubicacionLinterna === "seguro" ? "flex" : "none";
-
-        // Asegurarse de que las clases 'ocupado' en los slots coincidan con el estado actual
-        slotsCruce.forEach((slot) => {
-          if (
-            slot.children.length > 0 &&
-            slot.children[0].classList.contains("personaje")
-          ) {
-            slot.classList.add("ocupado");
-          } else {
-            slot.classList.remove("ocupado");
-          }
-        });
-
-        const minutos = Math.floor(tiempoTotal);
-        divReloj.textContent = `${String(minutos).padStart(2, "0")}:${String(
-          0
-        ).padStart(2, "0")}`;
-
-        actualizarEstadoBoton(); // En esta versión, el botón siempre está activo
-      }
-
+      
       function actualizarEstadoBoton() {
         // Botón de verificar siempre visible y habilitado en esta versión
         btnVerificarFormacion.style.display = "block";
