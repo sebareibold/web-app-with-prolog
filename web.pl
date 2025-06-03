@@ -1,12 +1,16 @@
 % Modulos necesarios para el servidor
 :- use_module(library(http/thread_httpd)).
 :- use_module(library(http/http_dispatch)).
-:- use_module(library(http/http_unix_daemon)).
 :- use_module(library(http/html_write)).
 :- use_module(library(http/http_files)). % Modulo para servir archivos estaticos
 
 % Este es el bucle del servidor principal, http_daemon es una común de iniciar el servidor (En el tutorial decian 2 formas diferentes)
-servidor(Port) :- http_daemon([port(Port), fork(false)]). 
+server(Port) :-  http_server(http_dispatch, [port(Port)]).
+
+% Para iniciar el servidor o detenerlo
+server_on(Port) :- server(Port).
+server_off(Port) :-  http_stop_server(Port, []).
+
 
 % Definimos el Ruteo a travez de los handlers
 :- http_handler(/, inicio_handler, []).
@@ -18,6 +22,7 @@ servidor(Port) :- http_daemon([port(Port), fork(false)]).
 :- http_handler('/assets/', serve_files, [prefix]).
 serve_files(Request) :-  http_reply_from_files('assets', [], Request).
 
+:- http_handler(root(.), http_reply_from_files('.', []), [prefix]).
 
 % Codigo de la seccion de inicio
 inicio_handler(_Request) :-
@@ -177,46 +182,14 @@ reglas_handler(_Request) :-
                             a([href='/',
                                style='display: inline-block; padding: 10px 20px; background-color:rgb(245, 3, 3); color: white; text-align: center; text-decoration: none; border-radius: 5px; margin-top: 20px;'],
                               'Ir al Inicio'),
-							  a([href='/simulacion-interactiva',
+							  a([href='/simulacion.html',
                                style='display: inline-block; padding: 10px 20px; background-color:rgb(56, 192, 39); color: white; text-align: center; text-decoration: none; border-radius: 5px; margin-top: 20px;'],
                               'Ir a la Simulacion')]
                             % --------------------------------------
 							)])
 							])]).
 
-% Codigo de la seccion de simulacion iteractiva       
-simulacion_handler(_Request) :-
-	reply_html_page([title('seccion de simulacion iteractiva  ')],
-		[
-					body(style = 'background: url(\'/assets/fondo_nubes.png\') no-repeat center center fixed; background-size: cover; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px;', % Añadido min-height y padding
 
-				[
-					  div(style = '
-						background: rgba(255, 255, 255, 0.9);  
-						width: 90%;  
-						max-width: 900px;  
-						padding: 30px; 
-						box-shadow:  0 10px 20px rgba(0,0,0,0.2);  
-						border-radius: 20px; 
-						text-align: center;  
-						margin: auto;  
-					 ',
-						[
-							h1(style = 'color : black', ['Problema']),
-							% arity 1
-							p(class = bodytext, 'TExto'),
-							% arity 2
-							p([class = bodytext, style = 'font - size : 120%'], [
-							  % --- Aquí se agrega el enlace/botón ---
-                            a([href='/reglas-del-puente',
-                               style='display: inline-block; padding: 10px 20px; background-color:rgb(255, 0, 0); color: white; text-align: center; text-decoration: none; border-radius: 5px; margin-top: 20px;'],
-                              'Ir a las Reglas'),
-							  a([href='/conceptos-aprendidos',
-                               style='display: inline-block; padding: 10px 20px; background-color:rgb(56, 192, 39); color: white; text-align: center; text-decoration: none; border-radius: 5px; margin-top: 20px;'],
-                              'Ver Logos')]
-                            % --------------------------------------
-							)])
-							])]).
 
 % Codigo de la seccion que aprendimos
 aprendizaje_handler(_Request) :-
@@ -242,7 +215,7 @@ aprendizaje_handler(_Request) :-
 							% arity 2
 							p([class = bodytext, style = 'font - size : 120%'], 
 							  % --- Aquí se agrega el enlace/botón ---
-                            a([href='/simulacion-interactiva',
+                            a([href='/simulacion.html',
                                style='display: inline-block; padding: 10px 20px; background-color:rgb(255, 11, 11); color: white; text-align: center; text-decoration: none; border-radius: 5px; margin-top: 20px;'],
                               'Volver a la Simulacion')
                             % --------------------------------------

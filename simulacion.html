@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cruce del Puente de Zurg (Drag & Drop con Slots)</title>
+    <style>
+      /* Estilos base para los personajes y linterna (ajustados para caber en slots) */
+      .personaje {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: grab;
+        background: #fff; /* Fondo para la tarjeta del personaje */
+        padding: 5px; /* Menos padding */
+        border-radius: 5px; /* Menos radio */
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        width: 55px; /* Ancho fijo para que no se estiren y quepan */
+        text-align: center;
+      }
+
+      .personaje img {
+        width: 40px; /* Tamaño de la imagen dentro de la tarjeta */
+        height: auto;
+      }
+
+      .personaje p {
+        font-size: 0.7em; /* Texto más pequeño */
+        margin: 3px 0 0 0;
+        color: #333;
+        line-height: 1.2;
+      }
+
+      .personaje.dragging {
+        opacity: 0.5;
+      }
+
+      .linterna {
+        background: #fff;
+        padding: 8px; /* Ajuste */
+        border-radius: 5px; /* Ajuste */
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        width: 50px; /* Ajuste */
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .linterna img {
+        width: 35px; /* Ajuste */
+        height: auto;
+      }
+
+      .linterna p {
+        font-size: 0.7em; /* Ajuste */
+        margin: 3px 0 0 0;
+        color: #333;
+        line-height: 1.2;
+      }
+
+      /* Estilo para resaltar las zonas donde se puede soltar */
+      .zona-drop.drag-over {
+        border: 2px dashed #00f;
+        background: rgba(0, 0, 255, 0.1);
+      }
+
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* Contenedores de Personajes en los lados */
+      #inicio-personajes,
+      #seguro-personajes {
+        min-height: 100px; /* Suficiente espacio para colocar iconos */
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+        padding: 10px; /* Añadir padding interno */
+        border: 2px dashed transparent; /* Borde por defecto transparente */
+      }
+
+      /* Estilo para el contenedor de los slots del puente */
+      #contenedor-slots-puente {
+        display: flex;
+        justify-content: space-around; /* Espacio entre los slots */
+        align-items: flex-end; /* Alineado a la base del puente visual */
+        width: 80%; /* Ocupa el 80% del ancho del puente visual */
+        min-height: 80px; /* Altura para los slots */
+        /* background: rgba(0, 255, 0, 0.1); /* DEBUG: ver área */
+      }
+
+      /* Estilo para cada slot individual en el puente */
+      .slot-cruce {
+        width: 60px; /* Ancho de cada slot */
+        height: 70px; /* Alto de cada slot */
+        border: 2px dashed #999; /* Borde para el slot vacío */
+        border-radius: 5px;
+        display: flex; /* Para centrar el personaje dentro */
+        justify-content: center;
+        align-items: center;
+        background: rgba(
+          255,
+          255,
+          255,
+          0.5
+        ); /* Fondo semitransparente para slots */
+      }
+
+      .slot-cruce.ocupado {
+        border-color: transparent; /* Ocultar borde si está ocupado */
+        background: transparent; /* Ocultar fondo si está ocupado */
+      }
+      .boton-navegacion {
+        display: inline-block;
+        padding: 12px 25px;
+        font-size: 1em;
+        font-weight: bold;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        text-decoration: none;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.3s ease;
+      }
+    </style>
+  </head>
+  <body
+    style="
+      margin: 0;
+      font-family: sans-serif;
+      background: url('/assets/fondo_nubes.png') no-repeat center center fixed;
+      background-size: cover;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      box-sizing: border-box;
+    "
+  >
+    <div
+      style="
+        display: flex;
+        width: 95%;
+        max-width: 1200px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 20px;
+        border-radius: 20px;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        gap: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+      "
+    >
+      <div
+        id="lado-inicio"
+        style="
+          flex: 1;
+          min-width: 250px;
+          padding: 20px;
+          background: #e0f7fa;
+          border-radius: 15px;
+          text-align: center;
+          border: 2px dashed #00bcd4; /* Borde exterior del lado */
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 20px;
+        "
+      >
+        <h2 style="color: #007ac1; margin-top: 0">Lado Inicio</h2>
+        <!-- Zona de Drop para regresar personajes -->
+        <div id="inicio-personajes" class="zona-drop">
+          <div class="personaje" id="buzz" data-tiempo="5" draggable="true">
+            <img src="/assets/buzz.png" alt="Buzz" />
+            <p>Buzz<br />5 min</p>
+          </div>
+          <div class="personaje" id="woody" data-tiempo="10" draggable="true">
+            <img src="/assets/woody.png" alt="Woody" />
+            <p>Woody<br />10 min</p>
+          </div>
+          <div class="personaje" id="rex" data-tiempo="20" draggable="true">
+            <img src="/assets/rex.png" alt="Rex" />
+            <p>Rex<br />20 min</p>
+          </div>
+          <div class="personaje" id="hamm" data-tiempo="25" draggable="true">
+            <img src="/assets/hamm.png" alt="Hamm" />
+            <p>Hamm<br />25 min</p>
+          </div>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 20px;
+        "
+      >
+        <div
+          id="reloj"
+          style="
+            font-size: 2em;
+            font-weight: bold;
+            color: #e74c3c;
+            background: #fff;
+            padding: 10px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            min-width: 150px;
+            text-align: center;
+          "
+        >
+          00:00
+        </div>
+
+        <!-- Contenedor visual del puente con la imagen de fondo -->
+        <div
+          id="puente-zona-visual"
+          style="
+            position: relative;
+            width: 400px;
+            height: 100px;
+            background: url('/assets/puente.png') no-repeat center bottom;
+            background-size: contain;
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end; /* Alinea el contenedor de slots a la base */
+          "
+        >
+          <!-- Contenedor para los slots individuales - ZONA DE DROP PADRE (para dragleave/over del padre) -->
+          <div id="contenedor-slots-puente" class="zona-drop">
+            <!-- Slots individuales - ZONAS DE DROP HIJAS -->
+            <div id="slot-cruce-1" class="slot-cruce zona-drop"></div>
+            <div id="slot-cruce-2" class="slot-cruce zona-drop"></div>
+            <div id="slot-cruce-3" class="slot-cruce zona-drop"></div>
+            <div id="slot-cruce-4" class="slot-cruce zona-drop"></div>
+          </div>
+        </div>
+
+        <div
+          style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+          "
+        >
+          <button
+            id="btn-verificar-formacion"
+            style="
+              padding: 12px 25px;
+              font-size: 1.1em;
+              font-weight: bold;
+              color: white;
+              background-color: #3498db;
+              border: none;
+              border-radius: 8px;
+              cursor: pointer;
+              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+              transition: background-color 0.3s ease;
+            "
+          >
+            Verificar Formación
+          </button>
+          <p
+            id="mensaje-juego"
+            style="color: #e74c3c; font-weight: bold; min-height: 1em"
+          ></p>
+        </div>
+      </div>
+
+      <div
+        id="lado-seguro"
+        style="
+          flex: 1;
+          min-width: 250px;
+          padding: 20px;
+          background: #e8f5e9;
+          border-radius: 15px;
+          text-align: center;
+          border: 2px dashed #4caf50; /* Borde exterior del lado */
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 20px;
+        "
+      >
+        <h2 style="color: #388e3c; margin-top: 0">Lado Seguro</h2>
+        <!-- Zona de Drop para recibir personajes -->
+        <div id="seguro-personajes" class="zona-drop"></div>
+      </div>
+      <div
+        style="
+          margin-top: 30px;
+          display: flex;
+          justify-content: center;
+          gap: 20px;
+          width: 100%;
+          flex-wrap: wrap;
+        "
+      >
+        <!-- Botón Reglas del Puente -->
+        <a
+          href="/reglas-del-puente"
+          class="boton-navegacion"
+          style="background-color: #9b59b6"
+        >
+          Reglas del Puente
+        </a>
+        <!-- Botón Conceptos Aprendidos -->
+        <a
+          href="/conceptos-aprendidos"
+          class="boton-navegacion"
+          style="background-color: #1abc9c"
+        >
+          Conceptos Aprendidos
+        </a>
+      </div>
+    </div>
+
+    <script>
+      const datosPersonajes = [
+        { id: "buzz", tiempo: 5, elemento: document.getElementById("buzz") },
+        { id: "woody", tiempo: 10, elemento: document.getElementById("woody") },
+        { id: "rex", tiempo: 20, elemento: document.getElementById("rex") },
+        { id: "hamm", tiempo: 25, elemento: document.getElementById("hamm") },
+      ];
+
+      let ubicacionesPersonajes = {
+        buzz: "inicio",
+        woody: "inicio",
+        rex: "inicio",
+        hamm: "inicio",
+      };
+
+      let tiempoTotal = 0; // No se actualiza en esta versionb
+
+      const divPersonajesInicio = document.getElementById("inicio-personajes");
+      const divPersonajesSeguro = document.getElementById("seguro-personajes");
+      const divContenedorSlotsPuente = document.getElementById(
+        "contenedor-slots-puente"
+      );
+      const slotsCruce = document.querySelectorAll(".slot-cruce"); // Todos los slots
+      const divReloj = document.getElementById("reloj");
+      const btnVerificarFormacion = document.getElementById(
+        "btn-verificar-formacion"
+      );
+
+      const divMensajeJuego = document.getElementById("mensaje-juego");
+
+      function inicioArrastre(evento) {
+        if (evento.target.classList.contains("personaje")) {
+          evento.dataTransfer.setData("text/plain", evento.target.id);
+          evento.dataTransfer.effectAllowed = "move";
+          evento.target.classList.add("dragging");
+          // Guardar la ubicación original del personaje antes de arrastrar
+          evento.target.dataset.ubicacionOriginal =
+            ubicacionesPersonajes[evento.target.id];
+        } else {
+          evento.preventDefault(); // No permitir arrastrar si no es un personaje
+        }
+      }
+
+      function arrastreSobre(evento) {
+        // Permitir soltar si los datos son texto/plain (nuestro ID de personaje)
+        if (evento.dataTransfer.types.includes("text/plain")) {
+          // Prevenir el comportamiento por defecto (ej. no permitir drop)
+          evento.preventDefault();
+
+          // Asegurarse de que el target actual es o contiene una zona de drop válida
+          const zonaDropValida = evento.target.closest(".zona-drop");
+          if (zonaDropValida) {
+            // Añadir la clase drag-over solo a la zona de drop válida
+            // Esto limpia visualmente cualquier otra zona que pudiera tener la clase
+            document
+              .querySelectorAll(".zona-drop")
+              .forEach((zona) => zona.classList.remove("drag-over"));
+            zonaDropValida.classList.add("drag-over");
+            evento.dataTransfer.dropEffect = "move"; // Indica que es una acción de movimiento
+
+            // Lógica adicional para slots: solo permitir soltar si el slot está vacío
+            if (zonaDropValida.classList.contains("slot-cruce")) {
+              if (zonaDropValida.children.length > 0) {
+                // Si el slot está ocupado, cambiar el efecto a 'none'
+                evento.dataTransfer.dropEffect = "none";
+                // Quitar la clase drag-over de este slot específico si está lleno
+                zonaDropValida.classList.remove("drag-over");
+              }
+            }
+          } else {
+            // Si el target no es una zona de drop válida, no permitir drop
+            evento.dataTransfer.dropEffect = "none";
+            // Limpiar cualquier drag-over de zonas previas
+            document
+              .querySelectorAll(".zona-drop")
+              .forEach((zona) => zona.classList.remove("drag-over"));
+          }
+        }
+      }
+
+      function salidaArrastre(evento) {
+        // Solo quitar la clase si salimos DE una zona de drop VÁLIDA
+        const zonaDropValida = evento.target.closest(".zona-drop");
+        if (zonaDropValida) {
+          if (evento.currentTarget.classList.contains("zona-drop")) {
+            evento.currentTarget.classList.remove("drag-over");
+          }
+        }
+      }
+
+      function soltar(evento) {
+        evento.preventDefault();
+        // Limpiar la clase drag-over de *todas* las zonas de drop al soltar
+        document
+          .querySelectorAll(".zona-drop")
+          .forEach((zona) => zona.classList.remove("drag-over"));
+
+        const draggedId = evento.dataTransfer.getData("text/plain");
+        const elementoArrastrado = document.getElementById(draggedId);
+
+        // Asegurarse de que lo que se soltó es un personaje
+        if (
+          !elementoArrastrado ||
+          !elementoArrastrado.classList.contains("personaje")
+        ) {
+          // Si no es válido, quitar la clase dragging y salir
+          if (elementoArrastrado)
+            elementoArrastrado.classList.remove("dragging");
+          return;
+        }
+
+        // Encontrar la zona de drop donde se soltó
+        const zonaDrop = evento.target.closest(".zona-drop");
+
+        // Si no se soltó en una zona de drop válida, el elemento regresa a su ubicación original
+        if (!zonaDrop) {
+          const ubicacionOriginal =
+            elementoArrastrado.dataset.ubicacionOriginal;
+          // Mover el elemento de vuelta al contenedor que le corresponde según su ubicacionOriginal
+          moverElementoAlContenedor(elementoArrastrado.id, ubicacionOriginal);
+          elementoArrastrado.classList.remove("dragging");
+          divMensajeJuego.textContent = "Soltado en zona no válida.";
+          setTimeout(() => {
+            divMensajeJuego.textContent = "";
+          }, 2000);
+          return;
+        }
+
+        const idPersonaje = elementoArrastrado.id;
+        const ubicacionActual = ubicacionesPersonajes[idPersonaje]; // Ubicación en el estado antes del drop
+        const idZonaDestino = zonaDrop.id;
+
+        let dropPermitido = false;
+        divMensajeJuego.textContent = ""; // Limpiar mensajes de error previos
+
+        // Lógica simplificada: Permitir arrastrar a cualquier zona válida (lado inicio, lado seguro, cualquier slot vacío)
+        if (
+          idZonaDestino === "inicio-personajes" ||
+          idZonaDestino === "seguro-personajes"
+        ) {
+          // Soltar en un lado: siempre permitido (lo mueve al final de ese contenedor)
+          dropPermitido = true;
+          ubicacionesPersonajes[idPersonaje] =
+            idZonaDestino === "inicio-personajes" ? "inicio" : "seguro";
+          zonaDrop.appendChild(elementoArrastrado); // Mover el elemento al contenedor del lado
+        } else if (zonaDrop.classList.contains("slot-cruce")) {
+          // Soltar en un slot del puente
+          if (zonaDrop.children.length === 0) {
+            // Solo si el slot está vacío
+            dropPermitido = true;
+            // Si el personaje venía de OTRO slot, limpiar ese slot primero
+            if (ubicacionActual.startsWith("slot-cruce")) {
+              document
+                .getElementById(ubicacionActual)
+                .classList.remove("ocupado");
+            }
+            ubicacionesPersonajes[idPersonaje] = idZonaDestino; // La nueva ubicación es el ID del slot
+            zonaDrop.appendChild(elementoArrastrado); // Mover el elemento al slot
+            zonaDrop.classList.add("ocupado"); // Marcar el slot como ocupado
+          } else {
+            divMensajeJuego.textContent = "¡Este espacio ya está ocupado!";
+            setTimeout(() => {
+              divMensajeJuego.textContent = "";
+            }, 2000);
+          }
+        }
+
+        elementoArrastrado.classList.remove("dragging");
+
+        // Si el drop fue permitido Y el personaje venía de un slot, limpiar visualmente el slot de origen
+        // Esta parte maneja específicamente arrastrar DE UN SLOT A OTRA ZONA (lado o slot vacío)
+        if (dropPermitido && ubicacionActual.startsWith("slot-cruce")) {
+          const slotOrigen = document.getElementById(ubicacionActual);
+          if (!slotOrigen.contains(elementoArrastrado)) {
+            slotOrigen.classList.remove("ocupado");
+          }
+        } else if (
+          !dropPermitido &&
+          ubicacionActual.startsWith("slot-cruce") &&
+          zonaDrop.classList.contains("slot-cruce")
+        ) {
+        }
+
+        if (!dropPermitido) {
+          moverElementoAlContenedor(idPersonaje, ubicacionActual);
+        }
+
+        actualizarVista();
+      }
+
+      function moverElementoAlContenedor(idPersonaje, ubicacion) {
+        const elementoPersonaje = document.getElementById(idPersonaje);
+        if (!elementoPersonaje) return;
+
+        if (ubicacion === "inicio") {
+          divPersonajesInicio.appendChild(elementoPersonaje);
+        } else if (ubicacion === "seguro") {
+          divPersonajesSeguro.appendChild(elementoPersonaje);
+        } else if (ubicacion.startsWith("slot-cruce")) {
+          const slot = document.getElementById(ubicacion);
+          if (slot) {
+            slot.appendChild(elementoPersonaje);
+            slot.classList.add("ocupado");
+          }
+        }
+        // Limpiar clase ocupado si se mueve fuera de un slot
+        if (!ubicacion.startsWith("slot-cruce")) {
+          slotsCruce.forEach((slot) => {
+            if (
+              !slot.contains(elementoPersonaje) &&
+              slot.classList.contains("ocupado")
+            ) {
+              // Esto es para limpiar el slot del que *pudo* haber venido
+              slot.classList.remove("ocupado");
+            }
+          });
+        }
+      }
+
+      function actualizarVista() {
+        // Asegurarse de que cada personaje está en el contenedor correcto según el estado ubicacionesPersonajes
+        datosPersonajes.forEach((personaje) => {
+          moverElementoAlContenedor(
+            personaje.id,
+            ubicacionesPersonajes[personaje.id]
+          );
+        });
+
+        // La linterna no se mueve en esta versión
+        divLinternaInicio.style.display =
+          ubicacionLinterna === "inicio" ? "flex" : "none";
+        divLinternaSeguro.style.display =
+          ubicacionLinterna === "seguro" ? "flex" : "none";
+
+        // Asegurarse de que las clases 'ocupado' en los slots coincidan con el estado actual
+        slotsCruce.forEach((slot) => {
+          if (
+            slot.children.length > 0 &&
+            slot.children[0].classList.contains("personaje")
+          ) {
+            slot.classList.add("ocupado");
+          } else {
+            slot.classList.remove("ocupado");
+          }
+        });
+
+        const minutos = Math.floor(tiempoTotal);
+        divReloj.textContent = `${String(minutos).padStart(2, "0")}:${String(
+          0
+        ).padStart(2, "0")}`;
+
+        actualizarEstadoBoton(); // En esta versión, el botón siempre está activo
+      }
+
+      function actualizarEstadoBoton() {
+        // Botón de verificar siempre visible y habilitado en esta versión
+        btnVerificarFormacion.style.display = "block";
+        btnVerificarFormacion.disabled = false;
+        // No se cambia el texto
+      }
+
+      function manejarClickBotonVerificar() {
+        divMensajeJuego.textContent = ""; // Limpiar mensaje anterior
+
+        const formacionEnPuenteOrdenada = [];
+        const idsSlots = [
+          "slot-cruce-1",
+          "slot-cruce-2",
+          "slot-cruce-3",
+          "slot-cruce-4",
+        ];
+
+        // Recorrer los slots en orden y ver qué personaje hay en cada uno
+        idsSlots.forEach((idSlot) => {
+          const slotElemento = document.getElementById(idSlot);
+          // Si el slot tiene un hijo Y ese hijo es un personaje
+          if (
+            slotElemento &&
+            slotElemento.children.length > 0 &&
+            slotElemento.children[0].classList.contains("personaje")
+          ) {
+            const idPersonajeEnSlot = slotElemento.children[0].id;
+            formacionEnPuenteOrdenada.push(idPersonajeEnSlot);
+          } else {
+            // Si el slot está vacío, puedes añadir un marcador o simplemente ignorarlo
+            // Por ejemplo: formacionEnPuenteOrdenada.push(null);
+          }
+        });
+
+        console.log(
+          "Formación en el puente (ordenada):",
+          formacionEnPuenteOrdenada
+        );
+
+        if (formacionEnPuenteOrdenada.length > 0) {
+          divMensajeJuego.textContent = `Formación en el puente: ${formacionEnPuenteOrdenada.join(
+            ", "
+          )}`;
+          // La variable arreglo con la formación es `formacionEnPuenteOrdenada`
+          // Aquí puedes usar esta variable para futuras validaciones o lógica del juego.
+        } else {
+          divMensajeJuego.textContent = "No hay juguetes en el puente.";
+        }
+      }
+
+      function inicializarJuego() {
+        document.querySelectorAll(".personaje").forEach((elementoPersonaje) => {
+          elementoPersonaje.addEventListener("dragstart", inicioArrastre);
+          // Asegurarse de que los personajes iniciales están en el contenedor correcto (inicio)
+          divPersonajesInicio.appendChild(elementoPersonaje);
+        });
+
+        // Añadir listeners de dragover/dragleave/drop a las ZONAS DE DROP
+        const zonasDrop = [
+          divPersonajesInicio,
+          divPersonajesSeguro,
+          ...slotsCruce,
+        ]; // Los lados Y los slots
+        zonasDrop.forEach((zona) => {
+          zona.addEventListener("dragover", arrastreSobre);
+          zona.addEventListener("dragleave", salidaArrastre);
+          zona.addEventListener("drop", soltar);
+        });
+
+        btnVerificarFormacion.addEventListener(
+          "click",
+          manejarClickBotonVerificar
+        );
+
+        actualizarVista(); // Coloca los elementos en su posición inicial y actualiza el reloj/botones.
+      }
+
+      document.addEventListener("DOMContentLoaded", inicializarJuego);
+    </script>
+  </body>
+</html>
