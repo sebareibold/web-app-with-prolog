@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Las Reglas Mágicas del Puente</title>
+    <style>
+      .boton-navegacion {
+        display: inline-block;
+        padding: 12px 25px;
+        font-size: 1em;
+        font-weight: bold;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        text-decoration: none;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.3s ease;
+      }
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: url("/assets/fondo_nubes.png") no-repeat center center fixed;
+        background-size: cover;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+
+      .contenedor {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 30px;
+        border-radius: 20px;
+        max-width: 1000px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        text-align: center;
+        animation: fadeIn 1s ease;
+      }
+
+      h1 {
+        color: #8e44ad;
+        font-size: 2em;
+        margin-bottom: 20px;
+      }
+
+      .grid-reglas {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+      }
+
+      .regla {
+        background: #fff;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        text-align: left;
+        animation: slideUp 0.5s ease;
+      }
+
+      .regla h2 {
+        font-size: 1.3em;
+        color: #34495e;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .regla img.icono {
+        width: 40px;
+        height: 40px;
+      }
+
+      .regla p {
+        font-size: 1em;
+        color: #555;
+        margin: 10px 0 0 0;
+      }
+
+      .animacion {
+        margin-top: 10px;
+        height: 120px;
+      }
+
+      .animacion img {
+        max-height: 100%;
+      }
+
+      .reloj {
+        font-size: 1.5em;
+        color: #e74c3c;
+        font-weight: bold;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(40px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="contenedor">
+      <h1>Las Reglas Mágicas del Puente</h1>
+      <div class="grid-reglas">
+        <div class="regla">
+          <h2>
+            <img
+              src="/assets/espadachin.png"
+              class="icono"
+              alt="Icono 2 personajes"
+            />
+            Regla 1: ¡Solo 1 o 2 amigos cruzan a la vez!
+          </h2>
+          <p>
+            Si intentan cruzar 3 o más al mismo tiempo... ¡el puente se rompe!
+          </p>
+          <div class="animacion">
+            <img
+              src="/assets/animaciones/regla1.gif"
+              alt="Animación de cruce seguro y caída por sobrepeso"
+            />
+          </div>
+        </div>
+
+        <div class="regla">
+          <h2>
+            <img
+              src="/assets/linterna.png"
+              class="icono"
+              alt="Icono linterna"
+            />
+            Regla 2: ¡Necesitan la linterna mágica!
+          </h2>
+          <p>
+            El puente está oscuro. Nadie puede cruzar sin la linterna brillante.
+          </p>
+          <div class="animacion">
+            <img
+              src="/assets/animaciones/linterna.gif"
+              alt="Animación linterna cruzando el puente"
+            />
+          </div>
+        </div>
+
+        <div class="regla">
+          <h2>
+            <img
+              src="/assets/flecha-hacia-atras.png"
+              class="icono"
+              alt="Icono flecha de regreso"
+            />
+            Regla 3: ¡Alguien debe regresar con la linterna!
+          </h2>
+          <p>
+            Después de cruzar, alguien debe volver con la linterna para que los
+            demás puedan cruzar también.
+          </p>
+          <div class="animacion">
+            <img
+              src="/assets/animaciones/regreso.gif"
+              alt="Animación de retorno con linterna"
+            />
+          </div>
+        </div>
+
+        <div class="regla">
+          <h2>
+            <img
+              src="/assets/reloj-de-mano.png"
+              class="icono"
+              alt="Icono reloj"
+            />
+            Regla 4: ¡Solo tienen 60 minutos!
+          </h2>
+          <p>
+            El malvado Zurg llegará pronto. ¡Todos deben cruzar antes de que el
+            reloj llegue a cero!
+          </p>
+          <div class="reloj">⏰ 60:00</div>
+        </div>
+        <div
+          style="
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+            flex-wrap: wrap;
+          "
+        >
+          <!-- Botón Reglas del Puente -->
+          <a
+            href="/reglas.html"
+            class="boton-navegacion"
+            style="background-color: #9b59b6"
+          >
+            Reglas del Puente
+          </a>
+          <!-- Botón Conceptos Aprendidos -->
+          <a
+            href="/conceptos.html"
+            class="boton-navegacion"
+            style="background-color: #1abc9c"
+          >
+            Conceptos Aprendidos
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

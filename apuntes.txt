@@ -39,3 +39,8 @@ Página 4: ¿Qué Aprendimos? (Conceptos Didácticos)
         "Tienes que pensar en un Plan (un orden de pasos) para que funcione." (Concepto básico de Algoritmo).
         "El ordenador recuerda el Tiempo y quién está en cada lado." (Concepto básico de Variables o Estado).
         "Hay que encontrar la mejor manera de hacer las cosas para ganar." (Concepto de Optimización/Eficiencia, aunque no usar ese término).
+
+
+Seba: Inicio y Reglas.
+Bauti: Simulacion.
+Nica: Conceptos.
