@@ -1,0 +1,255 @@
+body {
+    font-family: 'Arial', sans-serif;
+    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('assets/fondo.png');
+    background-size: cover;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+}
+
+.container {
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    width: 90%;
+    max-width: 1000px;
+}
+
+h1 {
+    font-family: 'Creepster';
+    color: #3CB371; /* Verde más claro */
+    text-align: center;
+    font-size: 3.5em;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Agrego sombra para dar más efecto tenebroso */
+}
+
+.instructions {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 0.9em;
+    color: #555;
+}
+
+.game-info {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color:#3CB371; /* Verde más claro */;
+    border-radius: 5px;
+}
+
+.game-info div {
+    font-family: 'Creepster';
+    font-size: 1.5em;
+}
+
+.game-area {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* Align tops of coasts */
+    margin-bottom: 20px;
+}
+
+.coast {
+    width: 40%;
+    min-height: 400px; /* Ensure space for characters */
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: #f9f9f9;
+}
+
+.coast h2 {
+    text-align: center;
+    margin-top: 0;
+    color: #8B4513; /* Marrón */
+    font-family: 'Creepster';
+    font-size: 2em;
+}
+
+.flashlight-emoji {
+    display: none;
+    margin-left: 5px;
+}
+
+.flashlight-emoji.active {
+    display: inline-block;
+}
+
+.bridge-area {
+    width: 40%;
+}
+
+.bridge-img {
+    width: 100%;
+    margin-top: 100px; /* Ajusta el margen superior para centrar verticalmente */
+    display: block;
+    height: auto;
+    object-fit: contain;
+}
+
+.characters-container {
+    display: flex;
+    flex-wrap: wrap; /* Allow characters to wrap if many */
+    gap: 10px; /* Spacing between characters */
+    justify-content: center;
+    min-height: 100px; /* To maintain some height even if empty */
+}
+
+.character {
+    border: 2px solid transparent;
+    border-radius: 5px;
+    padding: 5px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s;
+    background-color:#1a1a1a;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    font-family: Creepster;
+    font-size: 1.5em;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.character img {
+    width: 80px; /* Adjust as needed */
+    height: 100px; /* Adjust as needed */
+    object-fit: contain;
+    display: block;
+    margin: 0 auto 5px auto; /* Centra la imagen horizontalmente */
+}
+
+.character.selected {
+    transform: scale(1.05);
+    background-color: #3CB371;
+}
+
+.character.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.controls {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.controls button {
+    background-color: #5CB85C; /* Green */
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+    font-family: 'Creepster';
+}
+
+.controls button:hover {
+    background-color: #4CAF50;
+}
+
+.controls button#prolog-solve-button {
+    background-color: #F0AD4E; /* Orange */
+}
+.controls button#prolog-solve-button:hover {
+    background-color: #EC971F;
+}
+.controls button#reset-button {
+    background-color: #0275D8; /* Blue */
+}
+.controls button#reset-button:hover {
+    background-color: #025AA5;
+}
+
+.messages {
+    text-align: center;
+    font-weight: bold;
+    min-height: 20px; /* Reserve space */
+    margin-bottom: 15px;
+    font-family: 'Creepster';
+    font-size: 2.5em;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 20px 40px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    display: none;
+}
+
+.messages:not(:empty) {
+    display: block;
+}
+
+.messages.win {
+    color: #2E8B57;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.messages.lose {
+    color: #B22222;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.messages.error {
+    color: #FF8C00;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.move-log, .prolog-solution {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #3CB371; /* Mismo verde que game-info */
+    border-radius: 5px;
+}
+
+.move-log h3, .prolog-solution h3 {
+    margin-top: 0;
+    color: #333;
+    font-family: 'Creepster';
+}
+
+.move-log ul, .prolog-solution ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.move-log li, .prolog-solution li {
+    padding: 3px 0;
+    border-bottom: 1px dashed #ccc;
+}
+.move-log li:last-child, .prolog-solution li:last-child {
+    border-bottom: none;
+}
+
+#costa1 {
+    background-color: #DEB887; /* Mismo marrón claro que Costa 2 */
+    border: 12px solid #8B4513;
+    border-right: none;
+    border-radius: 8px;
+    padding: 15px;
+}
+
+#costa2 {
+    background-color: #DEB887; /* Marrón claro */
+    border: 12px solid #8B4513; /* Borde marrón más grueso */
+    border-left: none; /* Quitamos el borde izquierdo */
+    border-radius: 8px;
+    padding: 15px;
+}
