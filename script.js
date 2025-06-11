@@ -8,83 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Incluye su 'id' (un identificador único), 'name' (nombre para mostrar),
     // 'time' (el tiempo que tarda en cruzar) y 'imageSrc' (la ruta a su imagen).
     const characterData = [
-        { id: 'buzz', name: 'Buzz', time: 5, imageSrc: 'assets/buzz.png' }, 
+        { id: 'buzz', name: 'Buzz', time: 5, imageSrc: 'assets/buzz.png' },
         { id: 'woody', name: 'Woody', time: 10, imageSrc: 'assets/woody.png' },
         { id: 'rex', name: 'Rex', time: 20, imageSrc: 'assets/rex.png' },
         { id: 'hamm', name: 'Hamm', time: 25, imageSrc: 'assets/hamm.png' }
     ];
 
     // --- PROGRAMA PROLOG ---
-
-    const prologProgram = `
-        % Carga la librería 'lists' que nos da acceso a predicados útiles para manejar listas,
-        % como 'select/3', que usaremos para sacar personajes de la lista de una costa.
-        :- use_module(library(lists)).
-
-        % Este es el predicado principal que llamaremos desde JavaScript.
-        % Busca una solución (una secuencia de pasos 'Resultado') y el 'TiempoTotal' que toma.
-        ejercicio4(Resultado, TiempoTotal) :-
-            % Define el estado inicial: todos los personajes en la primera costa (lista 1),
-            % nadie en la segunda costa (lista 2), y el tiempo transcurrido es 0.
-            EstadoInicial = state([buzz,woody,rex,hamm], [], 0),
-            % 'phrase/2' es un predicado de Prolog para procesar gramáticas (DCG).
-            % Aquí, lo usamos para encontrar una secuencia de 'cruzar_ida' que, partiendo
-            % del 'EstadoInicial', nos lleve a un estado final, devolviendo los pasos en 'Resultado'.
-            phrase(cruzar_ida(EstadoInicial, TiempoTotal), Resultado).
-
-        % Hechos que definen el tiempo de cruce para cada personaje.
-        tiempo(buzz, 5).
-        tiempo(woody, 10).
-        tiempo(rex, 20).
-        tiempo(hamm, 25).
-
-        % --- LÓGICA DE LOS MOVIMIENTOS (GRAMÁTICA DCG) ---
-
-        % Regla para el cruce de ida (de costa 1 a costa 2).
-        % state(Costa1, Costa2, TiempoActual) es el estado antes del cruce.
-        cruzar_ida(state(Costa1, Costa2, TiempoActual), TiempoFinal) -->
-            {
-                % Este bloque es código Prolog puro que se ejecuta dentro de la regla DCG.
-                % Selecciona dos personajes (P1 y P2) de la costa 1.
-                select(P1, Costa1, CostaTemp1),
-                select(P2, CostaTemp1, CostaResult),
-                P1 @< P2, % Condición para no generar soluciones duplicadas (ej: woody,buzz y buzz,woody).
-                
-                % Calcula el tiempo que toma este cruce.
-                tiempo(P1, T1),
-                tiempo(P2, T2),
-                TiempoPaso is max(T1, T2), % El tiempo de cruce es el del más lento.
-                
-                % Actualiza el tiempo total y comprueba que no exceda el límite.
-                NuevoTiempo is TiempoActual + TiempoPaso,
-                NuevoTiempo =< 60
-            },
-            % Este es el paso que se añade a la lista de resultados.
-            % 'cruza_de_ida' es un término que representa este movimiento.
-            [cruza_de_ida(P1, P2, TiempoPaso)],
-            % Llamada recursiva: ahora intenta un cruce de vuelta desde el nuevo estado.
-            cruzar_vuelta(state(CostaResult, [P1, P2|Costa2], NuevoTiempo), TiempoFinal).
-
-        % Condición de parada para el cruce de vuelta: si todos están en la costa 2 (la costa 1 está vacía),
-        % el juego ha terminado. El '!' (corte) detiene la búsqueda de más soluciones por esta vía.
-        cruzar_vuelta(state([], _, TiempoFinal), TiempoFinal) --> !.
-        
-        % Regla para el cruce de vuelta (de costa 2 a costa 1).
-        cruzar_vuelta(state(Costa1, Costa2, TiempoActual), TiempoFinal) -->
-            {
-                % Selecciona un personaje (P1) de la costa 2 para que regrese con la linterna.
-                select(P1, Costa2, CostaResult),
-                
-                % Calcula y actualiza el tiempo.
-                tiempo(P1, T1),
-                NuevoTiempo is TiempoActual + T1,
-                NuevoTiempo =< 60
-            },
-            % Añade el paso de vuelta a la lista de resultados.
-            [cruza_de_vuelta(P1, T1)],
-            % Llamada recursiva: intenta un nuevo cruce de ida desde el nuevo estado.
-            cruzar_ida(state([P1|Costa1], CostaResult, NuevoTiempo), TiempoFinal).
-    `;
 
     // --- ELEMENTOS DEL DOM ---
 
@@ -115,47 +45,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Variable para guardar nuestra sesión de Prolog.
     let prologSession;
-    try {
-        // Creamos una nueva sesión de Prolog. Esto nos da un intérprete listo para usar.
-        prologSession = pl.create();
-        // Consultamos (cargamos) nuestro programa Prolog en la sesión.
-        prologSession.consult(prologProgram, {
-            // Callback que se ejecuta si el programa se carga correctamente.
-            success: function() { console.log("Prolog program loaded."); },
-            // Callback que se ejecuta si hay un error al cargar el programa.
-            error: function(err) { console.error("Error loading Prolog program:", prologSession.format_answer(err)); }
-        });
-    } catch (e) {
-        // Si la librería Tau Prolog no se cargó en la página, esto fallará.
-        console.error("Failed to initialize Tau Prolog:", e);
-        // Deshabilitamos el botón de resolver con Prolog para que el usuario no pueda usarlo.
-        prologSolveButton.disabled = true;
-        prologSolveButton.title = "Tau Prolog no pudo inicializarse.";
-    }
 
     // --- FUNCIONES PRINCIPALES DEL JUEGO ---
 
     /**
      * Inicializa o resetea el juego a su estado original.
      */
-    function initGame() {
+    async function initGame() {
         // Creamos una copia profunda de los datos de los personajes para no modificar el original.
         characters = JSON.parse(JSON.stringify(characterData));
         // A cada personaje le asignamos su ubicación inicial.
         characters.forEach(c => c.location = 'costa1');
-        
+
         // Reseteamos todas las variables de estado del juego.
         currentTime = 0;
         flashlightLocation = 'costa1';
         selectedCharacters = [];
         moveHistory = [];
         gameOver = false;
-        
+
+        try {
+            // Creamos una nueva sesión de Prolog. Esto nos da un intérprete listo para usar.
+            prologSession = pl.create();
+            // Consultamos (cargamos) nuestro programa Prolog en la sesión.
+            const result = await fetch('./toystory.pl')
+
+            if(!result.ok){
+                console.error("Error loading toystory.pl");
+            }
+
+            const prologProgram = await result.text();
+
+            prologSession.consult(prologProgram, {
+                // Callback que se ejecuta si el programa se carga correctamente.
+                success: function () { console.log("Prolog program loaded."); },
+                // Callback que se ejecuta si hay un error al cargar el programa.
+                error: function (err) { console.error("Error loading Prolog program:", prologSession.format_answer(err)); }
+            });
+        } catch (e) {
+            // Si la librería Tau Prolog no se cargó en la página, esto fallará.
+            console.error("Failed to initialize Tau Prolog:", e);
+            // Deshabilitamos el botón de resolver con Prolog para que el usuario no pueda usarlo.
+            prologSolveButton.disabled = true;
+            prologSolveButton.title = "Tau Prolog no pudo inicializarse.";
+        }
+
         // Limpiamos los mensajes y la solución de Prolog anterior.
         messageArea.textContent = '';
         messageArea.className = 'messages';
         prologSolutionList.innerHTML = '';
-        
+
         // Llamamos a render() para que la interfaz gráfica se actualice y muestre el estado inicial.
         render();
     }
@@ -218,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Actualizamos el texto del tiempo y la ubicación de la linterna.
         timeDisplay.textContent = `Tiempo: ${currentTime} minutos`;
         flashlightDisplay.textContent = `Linterna en: ${flashlightLocation === 'costa1' ? 'Costa 1' : 'Costa 2'}`;
-        
+
         // El botón de cruzar solo se activa si no ha terminado el juego y hay alguien seleccionado.
         crossButton.disabled = gameOver || selectedCharacters.length === 0;
 
@@ -257,11 +196,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Si es un viaje de vuelta, solo puede seleccionarse una persona.
                 if (selectedCharacters.length < 1) {
                     selectedCharacters.push(characterId);
-                } else { 
+                } else {
                     // Si ya hay uno seleccionado, lo reemplazamos.
                     selectedCharacters = [characterId];
                 }
-            } else { 
+            } else {
                 // Si es un viaje de ida, se pueden seleccionar hasta dos personas.
                 if (selectedCharacters.length < 2) {
                     selectedCharacters.push(characterId);
@@ -315,12 +254,12 @@ document.addEventListener('DOMContentLoaded', () => {
             char.location = (flashlightLocation === 'costa1' ? 'costa2' : 'costa1');
         });
         flashlightLocation = (flashlightLocation === 'costa1' ? 'costa2' : 'costa1');
-        
+
         // Añadimos el movimiento al historial y limpiamos la selección.
         moveHistory.push(`${moveHistory.length + 1}. ${moveDescription} (Total: ${currentTime} min)`);
         selectedCharacters = [];
         showMessage(''); // Limpiamos mensajes de error.
-        
+
         // Actualizamos la UI.
         render();
     }
@@ -337,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
             crossButton.disabled = true; // Deshabilitamos el botón al ganar.
         }
     }
-    
+
     /**
      * Muestra un mensaje al usuario en el área designada.
      * @param {string} msg - El mensaje a mostrar.
@@ -363,28 +302,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const query = `ejercicio4(Resultado, TiempoTotal).`;
         // Enviamos la consulta a la sesión de Prolog.
         prologSession.query(query, {
-            success: function() { 
+            success: function () {
                 console.log("Consulta enviada a Prolog.");
             },
-            error: function(err) {
+            error: function (err) {
                 showMessage("Error en la consulta Prolog: " + prologSession.format_answer(err), "error");
                 console.error("Prolog query error:", prologSession.format_answer(err));
             }
         });
-        
+
         let solutionFound = false;
 
         // Pedimos la primera (y en este caso, única) respuesta a la consulta.
         // El proceso de respuesta en Tau Prolog es asíncrono.
         prologSession.answer({
-            success: function(answer) {
+            success: function (answer) {
                 // Verificamos si la respuesta es una 'sustitución', que es como Prolog nos da los valores de las variables.
                 if (pl.type.is_substitution(answer) && answer.links.Resultado) {
                     // Obtenemos los valores de las variables 'Resultado' y 'TiempoTotal'.
                     const resultadoTerm = answer.lookup("Resultado");
                     const tiempoTotalTerm = answer.lookup("TiempoTotal");
                     const totalTimeProlog = pl.type.is_number(tiempoTotalTerm) ? tiempoTotalTerm.value : 0;
-                    
+
                     // La solución ('Resultado') viene como una lista de Prolog.
                     // Necesitamos recorrerla para extraer cada paso.
                     const steps = [];
@@ -399,7 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (steps.length > 0) {
                         solutionFound = true;
                         prologSolutionList.innerHTML = '';
-                        
+
                         // Creamos un mapa de ID a Nombre para buscar nombres de personajes fácilmente.
                         const characterNames = {};
                         characterData.forEach(c => {
@@ -425,13 +364,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             } else {
                                 formattedStep = stepTerm.toString(); // Si no lo reconocemos, mostramos el término Prolog.
                             }
-                
+
                             // Creamos un elemento <li> y lo añadimos a la lista de la solución.
                             const li = document.createElement('li');
                             li.textContent = `${index + 1}. ${formattedStep}`;
                             prologSolutionList.appendChild(li);
                         });
-                
+
                         // Finalmente, añadimos el tiempo total.
                         const liTotal = document.createElement('li');
                         liTotal.textContent = `Tiempo total de la solución: ${totalTimeProlog} minutos.`;
@@ -444,23 +383,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 } else if (answer === false) { // 'false' significa que la consulta no tuvo éxito.
                     if (!solutionFound) {
-                         showMessage("Prolog no encontró una solución.", "error");
+                        showMessage("Prolog no encontró una solución.", "error");
                     }
                 } else {
-                     showMessage("Respuesta de Prolog no reconocida.", "error");
+                    showMessage("Respuesta de Prolog no reconocida.", "error");
                 }
             },
             // Callbacks para otros posibles resultados de la consulta.
-            error: function(err) {
+            error: function (err) {
                 showMessage("Error obteniendo respuesta de Prolog: " + prologSession.format_answer(err), "error");
                 console.error("Prolog answer error:", prologSession.format_answer(err));
             },
-            fail: function() {
+            fail: function () {
                 if (!solutionFound) {
                     showMessage("Prolog no pudo encontrar una solución (fail).", "error");
                 }
             },
-            limit: function() {
+            limit: function () {
                 showMessage("Límite de cómputo de Prolog alcanzado.", "error");
             }
         });
@@ -474,7 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
     prologSolveButton.addEventListener('click', handleGetPrologSolution);
 
     // --- INICIALIZACIÓN ---
-    
+
     // Al cargar la página, llamamos a initGame() para empezar el juego por primera vez.
     initGame();
 });
