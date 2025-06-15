@@ -1,25 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- CONSTANTES Y DATOS INICIALES ---
-
-    // Tiempo máximo en minutos que los personajes tienen para cruzar el puente.
     const MAX_TIME = 60;
-
-    // Un arreglo de objetos, donde cada objeto representa a un personaje del juego.
-    // Incluye su 'id' (un identificador único), 'name' (nombre para mostrar),
-    // 'time' (el tiempo que tarda en cruzar) y 'imageSrc' (la ruta a su imagen).
     const characterData = [
         { id: 'buzz', name: 'Buzz', time: 5, imageSrc: 'assets/buzz.png' },
         { id: 'woody', name: 'Woody', time: 10, imageSrc: 'assets/woody.png' },
         { id: 'rex', name: 'Rex', time: 20, imageSrc: 'assets/rex.png' },
         { id: 'hamm', name: 'Hamm', time: 25, imageSrc: 'assets/hamm.png' }
     ];
-
-    // --- PROGRAMA PROLOG ---
+    // Un mapa para buscar datos de personajes por ID de forma más eficiente
+    const characterMap = new Map(characterData.map(c => [c.id, c]));
 
     // --- ELEMENTOS DEL DOM ---
-
-    // Guardamos en variables las referencias a los elementos HTML con los que vamos a interactuar.
-    // Esto es más eficiente que buscarlos en el documento cada vez que los necesitemos.
     const costa1Div = document.getElementById('characters-costa1');
     const costa2Div = document.getElementById('characters-costa2');
     const timeDisplay = document.getElementById('time-display');
@@ -32,98 +23,83 @@ document.addEventListener('DOMContentLoaded', () => {
     const prologSolutionList = document.getElementById('prolog-solution-list');
 
     // --- ESTADO DEL JUEGO ---
-
-    // Variables que definen el estado actual del juego. Serán modificadas durante la partida.
-    let characters = []; // Lista de personajes con su estado (ej: ubicación).
-    let currentTime = 0; // Tiempo transcurrido en el juego manual.
-    let flashlightLocation = 'costa1'; // Ubicación actual de la linterna.
-    let selectedCharacters = []; // Personajes seleccionados para el próximo cruce.
-    let moveHistory = []; // Historial de movimientos del jugador.
-    let gameOver = false; // Bandera para saber si el juego ha terminado.
-
-    // --- CONFIGURACIÓN DE TAU PROLOG ---
-
-    // Variable para guardar nuestra sesión de Prolog.
+    // Creamos el objeto gameState para mantener el estado del juego
+    let gameState = {};
+    let flashlightLocation = 'costa1';
+    let selectedCharacters = [];
+    let moveHistory = [];
+    let gameOver = false;
     let prologSession;
+
+    // --- FUNCIONES AUXILIARES ---
+
+    //Definimos la función auxiliar para convertir listas devueltas en Tau-Prolog a arreglos y así almacenarlos
+    function prologListToArray(listTerm) {
+        const arr = [];
+        let current = listTerm;
+        while (current && current.id === '.' && current.args) {
+            if (current.args[0] && current.args[0].id) {
+                arr.push(current.args[0].id);
+            }
+            current = current.args[1];
+        }
+        return arr;
+    }
 
     // --- FUNCIONES PRINCIPALES DEL JUEGO ---
 
-    /**
-     * Inicializa o resetea el juego a su estado original.
-     */
+    //Inicializa o resetea el juego a su estado inicial
     async function initGame() {
-        // Creamos una copia profunda de los datos de los personajes para no modificar el original.
-        characters = JSON.parse(JSON.stringify(characterData));
-        // A cada personaje le asignamos su ubicación inicial.
-        characters.forEach(c => c.location = 'costa1');
+        // Inicializa la nueva estructura de gameState.
+        gameState = {
+            costa1: characterData.map(c => c.id),
+            costa2: [],
+            tiempo: 0
+        };
 
-        // Reseteamos todas las variables de estado del juego.
-        currentTime = 0;
         flashlightLocation = 'costa1';
         selectedCharacters = [];
         moveHistory = [];
         gameOver = false;
 
         try {
-            // Creamos una nueva sesión de Prolog. Esto nos da un intérprete listo para usar.
             prologSession = pl.create();
-            // Consultamos (cargamos) nuestro programa Prolog en la sesión.
-            const result = await fetch('./toystory.pl')
-
-            if(!result.ok){
+            const result = await fetch('./toystory.pl');
+            if (!result.ok) {
                 console.error("Error loading toystory.pl");
             }
-
             const prologProgram = await result.text();
-
             prologSession.consult(prologProgram, {
-                // Callback que se ejecuta si el programa se carga correctamente.
-                success: function () { console.log("Prolog program loaded."); },
-                // Callback que se ejecuta si hay un error al cargar el programa.
-                error: function (err) { console.error("Error loading Prolog program:", prologSession.format_answer(err)); }
+                success: () => console.log("Prolog program loaded."),
+                error: (err) => console.error("Error loading Prolog program:", prologSession.format_answer(err))
             });
         } catch (e) {
-            // Si la librería Tau Prolog no se cargó en la página, esto fallará.
             console.error("Failed to initialize Tau Prolog:", e);
-            // Deshabilitamos el botón de resolver con Prolog para que el usuario no pueda usarlo.
             prologSolveButton.disabled = true;
             prologSolveButton.title = "Tau Prolog no pudo inicializarse.";
         }
 
-        // Limpiamos los mensajes y la solución de Prolog anterior.
         messageArea.textContent = '';
         messageArea.className = 'messages';
         prologSolutionList.innerHTML = '';
-
-        // Llamamos a render() para que la interfaz gráfica se actualice y muestre el estado inicial.
         render();
     }
 
-    /**
-     * Actualiza la interfaz de usuario (UI) para reflejar el estado actual del juego.
-     */
+    
+    //Actualiza la interfaz de usuario (UI) para reflejar el estado actual del juego
     function render() {
-        // Limpiamos las costas para volver a dibujar los personajes.
         costa1Div.innerHTML = '';
         costa2Div.innerHTML = '';
 
-        // Actualizamos la posición del emoji de la linterna.
-        const costa1Emoji = document.querySelector('#costa1 .flashlight-emoji');
-        const costa2Emoji = document.querySelector('#costa2 .flashlight-emoji');
-        if (costa1Emoji && costa2Emoji) {
-            costa1Emoji.textContent = flashlightLocation === 'costa1' ? '🔦' : '';
-            costa2Emoji.textContent = flashlightLocation === 'costa2' ? '🔦' : '';
-            costa1Emoji.className = `flashlight-emoji ${flashlightLocation === 'costa1' ? 'active' : ''}`;
-            costa2Emoji.className = `flashlight-emoji ${flashlightLocation === 'costa2' ? 'active' : ''}`;
-        }
+        //Funcion que renderiza los personajes en la costa correspondiente
+        const renderCharacter = (charId, container) => {
+            const char = characterMap.get(charId);
+            if (!char) return;
 
-        // Recorremos la lista de personajes y creamos un elemento HTML para cada uno.
-        characters.forEach(char => {
             const charElement = document.createElement('div');
             charElement.classList.add('character');
-            charElement.dataset.id = char.id; // Guardamos el id en el elemento.
+            charElement.dataset.id = char.id;
 
-            // Creamos y añadimos la imagen y el nombre del personaje.
             const img = document.createElement('img');
             img.src = char.imageSrc;
             img.alt = char.name;
@@ -133,35 +109,36 @@ document.addEventListener('DOMContentLoaded', () => {
             nameSpan.textContent = `${char.name} (${char.time} min)`;
             charElement.appendChild(nameSpan);
 
-            // Si el personaje está seleccionado, le añadimos una clase CSS para resaltarlo.
             if (selectedCharacters.includes(char.id)) {
                 charElement.classList.add('selected');
             }
 
-            // Un personaje no se puede seleccionar si el juego terminó o la linterna está en la otra costa.
-            if (char.location !== flashlightLocation || gameOver) {
+            const isClickable = (container === costa1Div && flashlightLocation === 'costa1') || (container === costa2Div && flashlightLocation === 'costa2');
+            if (!isClickable || gameOver) {
                 charElement.classList.add('disabled');
             } else {
-                // Si se puede seleccionar, le añadimos un evento de clic.
                 charElement.addEventListener('click', () => handleCharacterClick(char.id));
             }
 
-            // Añadimos el elemento del personaje a la costa correspondiente.
-            if (char.location === 'costa1') {
-                costa1Div.appendChild(charElement);
-            } else {
-                costa2Div.appendChild(charElement);
-            }
-        });
+            container.appendChild(charElement);
+        };
 
-        // Actualizamos el texto del tiempo y la ubicación de la linterna.
-        timeDisplay.textContent = `Tiempo: ${currentTime} minutos`;
+        gameState.costa1.forEach(id => renderCharacter(id, costa1Div));
+        gameState.costa2.forEach(id => renderCharacter(id, costa2Div));
+
+        const costa1Emoji = document.querySelector('#costa1 .flashlight-emoji');
+        const costa2Emoji = document.querySelector('#costa2 .flashlight-emoji');
+        if (costa1Emoji && costa2Emoji) {
+            costa1Emoji.textContent = flashlightLocation === 'costa1' ? '🔦' : '';
+            costa2Emoji.textContent = flashlightLocation === 'costa2' ? '🔦' : '';
+            costa1Emoji.className = `flashlight-emoji ${flashlightLocation === 'costa1' ? 'active' : ''}`;
+            costa2Emoji.className = `flashlight-emoji ${flashlightLocation === 'costa2' ? 'active' : ''}`;
+        }
+
+        timeDisplay.textContent = `Tiempo: ${gameState.tiempo} minutos`;
         flashlightDisplay.textContent = `Linterna en: ${flashlightLocation === 'costa1' ? 'Costa 1' : 'Costa 2'}`;
-
-        // El botón de cruzar solo se activa si no ha terminado el juego y hay alguien seleccionado.
         crossButton.disabled = gameOver || selectedCharacters.length === 0;
 
-        // Actualizamos la lista del historial de movimientos.
         moveHistoryList.innerHTML = '';
         moveHistory.forEach(move => {
             const li = document.createElement('li');
@@ -169,251 +146,175 @@ document.addEventListener('DOMContentLoaded', () => {
             moveHistoryList.appendChild(li);
         });
 
-        // Comprobamos si el jugador ha ganado.
         checkWinCondition();
     }
 
-    /**
-     * Maneja la lógica cuando el usuario hace clic en un personaje para seleccionarlo o deseleccionarlo.
-     */
+    //Maneja la lógica cuando el usuario hace clic en un personaje
     function handleCharacterClick(characterId) {
-        // Si el juego ha terminado, no hacemos nada.
         if (gameOver) return;
-
-        // Solo se pueden seleccionar personajes del lado de la linterna.
-        const char = characters.find(c => c.id === characterId);
-        if (char.location !== flashlightLocation) return;
 
         const index = selectedCharacters.indexOf(characterId);
         if (index > -1) {
-            // Si el personaje ya estaba seleccionado, lo deseleccionamos.
             selectedCharacters.splice(index, 1);
         } else {
-            // Si no estaba seleccionado, lo añadimos a la selección.
             const isReturning = flashlightLocation === 'costa2';
-
-            if (isReturning) {
-                // Si es un viaje de vuelta, solo puede seleccionarse una persona.
-                if (selectedCharacters.length < 1) {
-                    selectedCharacters.push(characterId);
-                } else {
-                    // Si ya hay uno seleccionado, lo reemplazamos.
-                    selectedCharacters = [characterId];
-                }
-            } else {
-                // Si es un viaje de ida, se pueden seleccionar hasta dos personas.
-                if (selectedCharacters.length < 2) {
-                    selectedCharacters.push(characterId);
-                }
+            if (isReturning && selectedCharacters.length < 1) {
+                selectedCharacters.push(characterId);
+            } else if (!isReturning && selectedCharacters.length < 2) {
+                selectedCharacters.push(characterId);
             }
         }
-        // Volvemos a renderizar para que la UI refleje la nueva selección.
         render();
     }
 
-    /**
-     * Ejecuta la acción de cruzar el puente con los personajes seleccionados.
-     */
+    //Ejecuta la acción de cruzar el puente delegando la lógica a Prolog
     function handleCrossBridge() {
         if (gameOver || selectedCharacters.length === 0) return;
 
-        // Filtramos los personajes que se van a mover.
-        const movingChars = characters.filter(c => selectedCharacters.includes(c.id));
-        let crossingTime = 0;
-        let moveDescription = '';
-
-        if (flashlightLocation === 'costa1') { // Movimiento de ida.
-            if (movingChars.length === 0 || movingChars.length > 2) {
-                showMessage("Debes seleccionar 1 o 2 personajes para cruzar.", "error");
-                return;
-            }
-            // El tiempo de cruce es el máximo de los tiempos de los que cruzan.
-            crossingTime = Math.max(...movingChars.map(c => c.time));
-            moveDescription = `Cruzaron a Costa 2: ${movingChars.map(c => c.name).join(' y ')}. Tiempo: ${crossingTime} min.`;
-        } else { // Movimiento de vuelta.
-            if (movingChars.length !== 1) {
-                showMessage("Debe regresar 1 personaje con la linterna.", "error");
-                return;
-            }
-            crossingTime = movingChars[0].time;
-            moveDescription = `Regresó a Costa 1: ${movingChars[0].name}. Tiempo: ${crossingTime} min.`;
+        // Validaciones previas en la UI antes de consultar a Prolog.
+        const direction = flashlightLocation === 'costa1' ? 'ida' : 'vuelta';
+        if (direction === 'ida' && (selectedCharacters.length !== 2)) {
+            showMessage("Debes seleccionar 2 personajes para cruzar.", "error");
+            return;
         }
-
-        // Actualizamos el tiempo total.
-        currentTime += crossingTime;
-        if (currentTime > MAX_TIME) {
-            // Si se excede el tiempo, el juego termina.
-            showMessage(`¡Tiempo excedido! (${currentTime} min). Has perdido.`, "lose");
-            gameOver = true;
-            render();
+        if (direction === 'vuelta' && selectedCharacters.length !== 1) {
+            showMessage("Debe regresar 1 personaje con la linterna.", "error");
             return;
         }
 
-        // Cambiamos la ubicación de los personajes que se movieron y de la linterna.
-        movingChars.forEach(char => {
-            char.location = (flashlightLocation === 'costa1' ? 'costa2' : 'costa1');
+        //Preparamos los datos para la consulta a Prolog
+        const personajesProlog = `[${selectedCharacters.sort().join(',')}]`; //Agregamos la función sort para que compute correctamente P1 @< P2
+        const estadoPrologString = `state([${gameState.costa1.join(',')}],[${gameState.costa2.join(',')}],${gameState.tiempo})`;
+        const consulta = `verificar_cruce(${personajesProlog}, ${estadoPrologString}, ${direction}, SiguienteEstado).`;
+
+        console.log("Enviando a Prolog:", consulta);
+        prologSession.query(consulta);
+
+        //Definimos qué hacer con la respuesta de Prolog
+        prologSession.answer(answer => {
+            //Si el movimiento es inválido entonces el juego finaliza, ya que en el único caso que se puede dar es cuando no hay más tiempo
+            if (answer === false) {
+                showMessage(`¡Tiempo excedido! Has perdido.`, "lose");
+                gameOver = true;
+                render();
+                return;
+            }
+
+            //El movimiento es válido, actualiza los estados del juego
+            const nuevoEstadoProlog = answer.lookup("SiguienteEstado");
+            if (!nuevoEstadoProlog || !nuevoEstadoProlog.args) {
+                console.error("Error Lógico en Prolog: La variable SiguienteEstado no fue asignada.", nuevoEstadoProlog);
+                return;
+            }
+
+            //Actualizamos el estado de JavaScript con la respuesta de Prolog
+            const nuevaCosta1Term = nuevoEstadoProlog.args[0];
+            const nuevaCosta2Term = nuevoEstadoProlog.args[1];
+            const nuevoTiempoTerm = nuevoEstadoProlog.args[2];
+
+            const tiempoAnterior = gameState.tiempo;
+
+            gameState = {
+                costa1: prologListToArray(nuevaCosta1Term),
+                costa2: prologListToArray(nuevaCosta2Term),
+                tiempo: nuevoTiempoTerm.value
+            };
+
+            //Actualizamos el resto de la UI y el estado secundario
+            flashlightLocation = (direction === 'ida' ? 'costa2' : 'costa1');
+            const tiempoPaso = gameState.tiempo - tiempoAnterior;
+            const movingNames = selectedCharacters.map(id => characterMap.get(id).name).join(' y ');
+
+            const moveDescription = direction === 'ida'
+                ? `Cruzaron a Costa 2: ${movingNames}. (Paso: ${tiempoPaso} min)`
+                : `Regresó a Costa 1: ${movingNames}. (Paso: ${tiempoPaso} min)`;
+
+            moveHistory.push(`${moveHistory.length + 1}. ${moveDescription} (Total: ${gameState.tiempo} min)`);
+            selectedCharacters = [];
+            showMessage(''); // Limpiamos mensajes de error.
+
+            //Renderizamos la interfaz con el nuevo estado.
+            render();
         });
-        flashlightLocation = (flashlightLocation === 'costa1' ? 'costa2' : 'costa1');
-
-        // Añadimos el movimiento al historial y limpiamos la selección.
-        moveHistory.push(`${moveHistory.length + 1}. ${moveDescription} (Total: ${currentTime} min)`);
-        selectedCharacters = [];
-        showMessage(''); // Limpiamos mensajes de error.
-
-        // Actualizamos la UI.
-        render();
     }
 
-    /**
-     * Comprueba si todos los personajes han llegado a la costa 2.
-     */
+    //Comprueba si todos los personajes han llegado a la costa 2.
     function checkWinCondition() {
-        // 'every' devuelve true si todos los elementos del array cumplen la condición.
-        const allOnCosta2 = characters.every(c => c.location === 'costa2');
-        if (allOnCosta2 && !gameOver) {
-            showMessage(`¡Felicidades! Todos cruzaron en ${currentTime} minutos.`, "win");
+        if (gameState.costa1 && gameState.costa1.length === 0 && !gameOver) {
+            showMessage(`¡Felicidades! Todos cruzaron en ${gameState.tiempo} minutos.`, "win");
             gameOver = true;
-            crossButton.disabled = true; // Deshabilitamos el botón al ganar.
+            crossButton.disabled = true;
         }
     }
 
-    /**
-     * Muestra un mensaje al usuario en el área designada.
-     * @param {string} msg - El mensaje a mostrar.
-     * @param {string} type - El tipo de mensaje ('win', 'lose', 'error') para aplicarle un estilo CSS.
-     */
     function showMessage(msg, type = '') {
         messageArea.textContent = msg;
         messageArea.className = `messages ${type}`;
     }
 
-    /**
-     * Pide a Prolog una solución al problema y la muestra en la UI.
-     */
     async function handleGetPrologSolution() {
         if (!prologSession) {
             showMessage("Prolog no está disponible.", "error");
             return;
         }
         showMessage("Calculando solución con Prolog...", "");
-        prologSolutionList.innerHTML = ''; // Limpiamos la solución anterior.
-
-        // Definimos la consulta a Prolog. Queremos que nos devuelva los pasos y el tiempo total.
+        prologSolutionList.innerHTML = '';
         const query = `ejercicio4(Resultado, TiempoTotal).`;
-        // Enviamos la consulta a la sesión de Prolog.
-        prologSession.query(query, {
-            success: function () {
-                console.log("Consulta enviada a Prolog.");
-            },
-            error: function (err) {
-                showMessage("Error en la consulta Prolog: " + prologSession.format_answer(err), "error");
-                console.error("Prolog query error:", prologSession.format_answer(err));
-            }
-        });
-
+        prologSession.query(query);
         let solutionFound = false;
 
-        // Pedimos la primera (y en este caso, única) respuesta a la consulta.
-        // El proceso de respuesta en Tau Prolog es asíncrono.
-        prologSession.answer({
-            success: function (answer) {
-                // Verificamos si la respuesta es una 'sustitución', que es como Prolog nos da los valores de las variables.
-                if (pl.type.is_substitution(answer) && answer.links.Resultado) {
-                    // Obtenemos los valores de las variables 'Resultado' y 'TiempoTotal'.
-                    const resultadoTerm = answer.lookup("Resultado");
-                    const tiempoTotalTerm = answer.lookup("TiempoTotal");
-                    const totalTimeProlog = pl.type.is_number(tiempoTotalTerm) ? tiempoTotalTerm.value : 0;
+        prologSession.answer(answer => {
+            if (pl.type.is_substitution(answer) && answer.links.Resultado) {
+                const resultadoTerm = answer.lookup("Resultado");
+                const tiempoTotalTerm = answer.lookup("TiempoTotal");
+                const totalTimeProlog = pl.type.is_number(tiempoTotalTerm) ? tiempoTotalTerm.value : 0;
 
-                    // La solución ('Resultado') viene como una lista de Prolog.
-                    // Necesitamos recorrerla para extraer cada paso.
-                    const steps = [];
-                    let currentTerm = resultadoTerm;
-                    while (pl.type.is_term(currentTerm) && currentTerm.indicator === "./2") {
-                        const head = currentTerm.args[0]; // La cabeza de la lista (el paso actual).
-                        const tail = currentTerm.args[1]; // La cola (el resto de la lista).
-                        steps.push(head);
-                        currentTerm = tail;
-                    }
-
-                    if (steps.length > 0) {
-                        solutionFound = true;
-                        prologSolutionList.innerHTML = '';
-
-                        // Creamos un mapa de ID a Nombre para buscar nombres de personajes fácilmente.
-                        const characterNames = {};
-                        characterData.forEach(c => {
-                            characterNames[c.id] = c.name;
-                        });
-
-                        // Ahora que tenemos los pasos, los formateamos en texto legible.
-                        steps.forEach((stepTerm, index) => {
-                            let formattedStep = '';
-                            // Analizamos cada paso (que es un término de Prolog) y construimos el string.
-                            if (stepTerm.id === 'cruza_de_ida' && stepTerm.args.length === 3) {
-                                const p1 = stepTerm.args[0].id;
-                                const p2 = stepTerm.args[1].id;
-                                const time = stepTerm.args[2].value;
-                                const n1 = characterNames[p1] || p1;
-                                const n2 = characterNames[p2] || p2;
-                                formattedStep = `Cruzan de ida: ${n1} y ${n2}. (Tiempo: ${time} min)`;
-                            } else if (stepTerm.id === 'cruza_de_vuelta' && stepTerm.args.length === 2) {
-                                const p1 = stepTerm.args[0].id;
-                                const time = stepTerm.args[1].value;
-                                const n1 = characterNames[p1] || p1;
-                                formattedStep = `Regresa: ${n1}. (Tiempo: ${time} min)`;
-                            } else {
-                                formattedStep = stepTerm.toString(); // Si no lo reconocemos, mostramos el término Prolog.
-                            }
-
-                            // Creamos un elemento <li> y lo añadimos a la lista de la solución.
-                            const li = document.createElement('li');
-                            li.textContent = `${index + 1}. ${formattedStep}`;
-                            prologSolutionList.appendChild(li);
-                        });
-
-                        // Finalmente, añadimos el tiempo total.
-                        const liTotal = document.createElement('li');
-                        liTotal.textContent = `Tiempo total de la solución: ${totalTimeProlog} minutos.`;
-                        liTotal.style.fontWeight = "bold";
-                        prologSolutionList.appendChild(liTotal);
-                        showMessage("Solución de Prolog encontrada.", "win");
-
-                    } else {
-                        showMessage("Prolog no encontró una solución o el formato es inesperado.", "error");
-                    }
-                } else if (answer === false) { // 'false' significa que la consulta no tuvo éxito.
-                    if (!solutionFound) {
-                        showMessage("Prolog no encontró una solución.", "error");
-                    }
-                } else {
-                    showMessage("Respuesta de Prolog no reconocida.", "error");
+                const steps = [];
+                let currentTerm = resultadoTerm;
+                while (pl.type.is_term(currentTerm) && currentTerm.indicator === "./2") {
+                    steps.push(currentTerm.args[0]);
+                    currentTerm = currentTerm.args[1];
                 }
-            },
-            // Callbacks para otros posibles resultados de la consulta.
-            error: function (err) {
-                showMessage("Error obteniendo respuesta de Prolog: " + prologSession.format_answer(err), "error");
-                console.error("Prolog answer error:", prologSession.format_answer(err));
-            },
-            fail: function () {
-                if (!solutionFound) {
-                    showMessage("Prolog no pudo encontrar una solución (fail).", "error");
+
+                if (steps.length > 0) {
+                    solutionFound = true;
+                    prologSolutionList.innerHTML = '';
+                    steps.forEach((stepTerm, index) => {
+                        let formattedStep = '';
+                        if (stepTerm.id === 'cruza_de_ida' && stepTerm.args.length === 3) {
+                            const p1 = characterMap.get(stepTerm.args[0].id).name;
+                            const p2 = characterMap.get(stepTerm.args[1].id).name;
+                            const time = stepTerm.args[2].value;
+                            formattedStep = `Cruzan de ida: ${p1} y ${p2}. (Tiempo: ${time} min)`;
+                        } else if (stepTerm.id === 'cruza_de_vuelta' && stepTerm.args.length === 2) {
+                            const p1 = characterMap.get(stepTerm.args[0].id).name;
+                            const time = stepTerm.args[1].value;
+                            formattedStep = `Regresa: ${p1}. (Tiempo: ${time} min)`;
+                        } else {
+                            formattedStep = stepTerm.toString();
+                        }
+                        const li = document.createElement('li');
+                        li.textContent = `${index + 1}. ${formattedStep}`;
+                        prologSolutionList.appendChild(li);
+                    });
+
+                    const liTotal = document.createElement('li');
+                    liTotal.textContent = `Tiempo total de la solución: ${totalTimeProlog} minutos.`;
+                    liTotal.style.fontWeight = "bold";
+                    prologSolutionList.appendChild(liTotal);
+                    showMessage("Solución de Prolog encontrada.", "win");
                 }
-            },
-            limit: function () {
-                showMessage("Límite de cómputo de Prolog alcanzado.", "error");
+            } else if (answer === false && !solutionFound) {
+                showMessage("Prolog no encontró una solución.", "error");
             }
         });
     }
 
     // --- EVENT LISTENERS ---
-
-    // Asignamos las funciones a los eventos de clic de los botones.
     crossButton.addEventListener('click', handleCrossBridge);
     resetButton.addEventListener('click', initGame);
     prologSolveButton.addEventListener('click', handleGetPrologSolution);
 
     // --- INICIALIZACIÓN ---
-
-    // Al cargar la página, llamamos a initGame() para empezar el juego por primera vez.
     initGame();
 });

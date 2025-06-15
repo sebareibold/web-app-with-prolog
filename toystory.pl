@@ -65,3 +65,28 @@ cruzar_vuelta(state(Costa1, Costa2, TiempoActual), TiempoFinal) -->
     [cruza_de_vuelta(P1, T1)],
     % Llamada recursiva: intenta un nuevo cruce de ida desde el nuevo estado.
     cruzar_ida(state([P1|Costa1], CostaResult, NuevoTiempo), TiempoFinal).
+
+verificar_cruce([P1, P2], state(Costa1, Costa2, TiempoActual), ida, SiguienteEstado) :-
+    P1 @< P2, % Mantenemos la consistencia para evitar duplicados
+    % Verificamos que ambos personajes están en la costa de origen (Costa1)
+    select(P1, Costa1, Costa1Temp),
+    select(P2, Costa1Temp, Costa1Nueva),
+    % Calculamos el tiempo del paso y el nuevo tiempo total
+    tiempo(P1, T1),
+    tiempo(P2, T2),
+    TiempoPaso is max(T1, T2),
+    NuevoTiempo is TiempoActual + TiempoPaso,
+    % Comprobamos que el nuevo tiempo no excede el límite
+    NuevoTiempo =< 60,
+    SiguienteEstado = state(Costa1Nueva, [P1, P2 | Costa2], NuevoTiempo).
+
+% Caso 2: Verificar un cruce de vuelta (1 personaje)
+verificar_cruce([P1], state(Costa1, Costa2, TiempoActual), vuelta, SiguienteEstado) :-
+    % Verificamos que el personaje está en la costa de origen (Costa2)
+    select(P1, Costa2, Costa2Nueva),
+    % Calculamos el tiempo del paso y el nuevo tiempo total
+    tiempo(P1, T1),
+    NuevoTiempo is TiempoActual + T1,
+    % Comprobamos que el nuevo tiempo no excede el límite
+    NuevoTiempo =< 60,
+    SiguienteEstado = state([P1 | Costa1], Costa2Nueva, NuevoTiempo).
