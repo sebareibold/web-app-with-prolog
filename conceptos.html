@@ -1,11 +1,150 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    
-</body>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>¿Qué Aprendimos?</title>
+    <style>
+      .boton-navegacion {
+        display: inline-block;
+        padding: 12px 25px;
+        font-size: 1em;
+        font-weight: bold;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        text-decoration: none;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.3s ease;
+      }
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: url("/assets/fondo_nubes.png") no-repeat center center fixed;
+        background-size: cover;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+
+      .contenedor {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 30px;
+        border-radius: 20px;
+        max-width: 1000px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        text-align: center;
+        animation: fadeIn 1s ease;
+      }
+
+      h1 {
+        color: #8e44ad;
+        font-size: 2em;
+        margin-bottom: 20px;
+      }
+
+      .grid-conceptos {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 20px;
+      }
+
+      .concepto {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        text-align: left;
+        animation: slideUp 0.5s ease;
+        margin-bottom: 10px;
+      }
+
+      .animacion {
+        margin-top: 10px;
+        height: 120px;
+      }
+
+      .animacion img {
+        max-height: 100%;
+      }
+
+      .reloj {
+        font-size: 1.5em;
+        color: #e74c3c;
+        font-weight: bold;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(40px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="contenedor">
+      <h1>Conceptos Aprendidos</h1>
+      <div class="grid-conceptos">
+        <div class="concepto">
+          <p>☑ Aprendimos a darle instrucciones a la computadora sobre quien tiene que cruzar el puente</p>
+        </div>
+
+        <div class="concepto">
+          <p>☑ Aprendimos a respetar reglas, cosa que en la programación se conocen como restricciones</p>
+        </div>
+
+        <div class="concepto">
+          <p>☑ Aprendimos a pensar un plan con un orden de pasos para que todo funcione, cosa que puede terminar en un algoritmo</p>
+        </div>
+
+        <div class="concepto">
+          <p>☑ Aprendimos que la computadora se acuerda del tiempo que pasó y quién se queda de cada lado</p>
+      </div>
+      <div
+        style="
+          margin-top: 30px;
+          display: flex;
+          justify-content: center;
+          gap: 20px;
+          width: 100%;
+          flex-wrap: wrap;
+        "
+      >
+        <!-- Botón Reglas del Puente -->
+        <a
+          href="/"
+          class="boton-navegacion"
+          style="background-color: #4ee249"
+        >
+          Volver al Inicio
+        </a>
+        <!-- Botón Conceptos Aprendidos -->
+        <a
+          href="/simulacion.html"
+          class="boton-navegacion"
+          style="background-color: #ffbb00b9"
+        >
+          Ir a la Simulacion
+        </a>
+      </div>
+    </div>
+  </body>
 </html>
