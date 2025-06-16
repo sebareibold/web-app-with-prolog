@@ -27,7 +27,7 @@ serve_files(Request) :-	http_reply_from_files('assets', [], Request).
 
 % Codigo de la seccion de inicio
 inicio_handler(_Request) :-
-	reply_html_page([title('Explicacion: Ejercicio Toy Story - ¡La Gran Escape de Zurg!')],
+	reply_html_page([title('Explicacion: Ejercicio Toy Story - ¡El Gran Escape de Zurg!')],
 		[
 			% --- Estilo del BODY con imagen de fondo ---
 			body(style = 'background: url(\'/assets/fondo_nubes.png\') no-repeat center center fixed; background-size: cover; 
@@ -46,7 +46,7 @@ inicio_handler(_Request) :-
 					 ',
 						[
 							% --- Titulo Grande y Atractivo ---
-							h1(style = 'color: #e74c3c; margin-bottom: 20px; font-size: 2.5em;', ['¡La Gran Escape de Zurg!']),
+							h1(style = 'color: #e74c3c; margin-bottom: 20px; font-size: 2.5em;', ['¡El Gran Escape de Zurg!']),
 							% --- Explicación del problema ---
 							p(style = 'margin-bottom: 30px; color: #555; line-height: 1.6;',
 								[
